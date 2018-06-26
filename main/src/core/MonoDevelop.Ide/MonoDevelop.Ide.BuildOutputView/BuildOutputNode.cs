@@ -376,10 +376,11 @@ namespace MonoDevelop.Ide.BuildOutputView
 		{
 			var duration = node.EndTime.Subtract (node.StartTime);
 			if (includeDiagnostics) {
+				const int DiagnosticRoundPrecision = 3;
 				if (duration.TotalHours >= 1) {
-					return string.Format ("{0,12}", duration.ToString (@"hh\:mm\:ss\.fff"));
+					return string.Format ("{0,12}", duration.ToString (@"hh\:mm\:ss\." + new string ('f', DiagnosticRoundPrecision)));
 				} 
-				return string.Format ("{0,12}", duration.ToString (@"mm\:ss\.fff"));
+				return string.Format ("{0,12}", duration.ToString (@"mm\:ss\." + new string ('f', DiagnosticRoundPrecision)));
 			} 
 
 			if (duration.TotalHours >= 1) {
@@ -388,8 +389,10 @@ namespace MonoDevelop.Ide.BuildOutputView
 
 			if (duration.TotalMinutes >= 1) {
 				return string.Format ("{0,7}", GettextCatalog.GetString ("{0}m {1}s", duration.Minutes.ToString(), duration.Seconds.ToString ("00")));
-			} 
-			return string.Format ("{0,7}", GettextCatalog.GetString ("{0}s", duration.Seconds.ToString ()));
+			}
+
+			const int NormalRoundPrecision = 1;
+			return Math.Round ((duration.Seconds + duration.Milliseconds / 1000d), NormalRoundPrecision).ToString ("F" + NormalRoundPrecision) + "s";
 		}
 
 		static void ToString (this BuildOutputNode node, bool includeChildren, StringBuilder result, string margin)
