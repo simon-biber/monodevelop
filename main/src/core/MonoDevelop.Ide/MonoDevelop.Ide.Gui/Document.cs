@@ -169,9 +169,15 @@ namespace MonoDevelop.Ide.Gui
 			if (window.ViewContent.Project != null)
 				window.ViewContent.Project.Modified += HandleProjectModified;
 			window.ViewsChanged += HandleViewsChanged;
-			window.ViewContent.ContentNameChanged += ReloadAnalysisDocumentHandler;
+			window.ViewContent.ContentNameChanged += OnContentNameChanged;
 			MonoDevelopWorkspace.LoadingFinished += ReloadAnalysisDocumentHandler;
 			DocumentRegistry.Add (this);
+		}
+
+		void OnContentNameChanged (object sender, EventArgs e)
+		{
+			OnFileNameChanged ();
+			ReloadAnalysisDocumentHandler (sender, e);
 		}
 
 		void ReloadAnalysisDocumentHandler (object sender, EventArgs e)
@@ -199,6 +205,13 @@ namespace MonoDevelop.Ide.Gui
 					return null;
 				return Window.ViewContent.IsUntitled ? Window.ViewContent.UntitledName : Window.ViewContent.ContentName;
 			}
+		}
+
+		internal event EventHandler FileNameChanged;
+
+		void OnFileNameChanged ()
+		{
+			FileNameChanged?.Invoke (this, EventArgs.Empty);
 		}
 
 		public bool IsFile {
@@ -428,10 +441,11 @@ namespace MonoDevelop.Ide.Gui
 						// save backup first						
 						if (IdeApp.Preferences.CreateFileBackupCopies) {
                             await Window.ViewContent.Save (fileName + "~");
-							FileService.NotifyFileChanged (fileName + "~");
 						}
 						DocumentRegistry.SkipNextChange (fileName);
 						await Window.ViewContent.Save (fileName);
+						// Force a change notification. This is needed for FastCheckNeedsBuild to be updated
+						// when saving before a build, for example.
 						FileService.NotifyFileChanged (fileName);
                         OnSaved(EventArgs.Empty);
 					}
@@ -539,7 +553,6 @@ namespace MonoDevelop.Ide.Gui
 
 		protected override void OnSaved (EventArgs e)
 		{
-			IdeApp.Workbench.SaveFileStatus ();
 			base.OnSaved (e);
 		}
 
@@ -602,7 +615,8 @@ namespace MonoDevelop.Ide.Gui
 			// Unsubscribe project events
 			if (window.ViewContent.Project != null)
 				window.ViewContent.Project.Modified -= HandleProjectModified;
-			window.ViewsChanged += HandleViewsChanged;
+			window.ViewsChanged -= HandleViewsChanged;
+			window.ViewContent.ContentNameChanged -= OnContentNameChanged;
 			MonoDevelopWorkspace.LoadingFinished -= ReloadAnalysisDocumentHandler;
 
 			window = null;

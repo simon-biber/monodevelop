@@ -685,8 +685,9 @@ namespace MonoDevelop.Xml.Editor
 				
 				if (elements.Count == 0) {
 					string name = el.Name.FullName;
-					completionList.Add (new BaseXmlCompletionData("/" + name + ">", Gtk.Stock.GoBack,
-					                                              GettextCatalog.GetString ("Closing tag for '{0}'", name)));
+					completionList.Add (new XmlTagCompletionData ("/" + name + ">", 0, true) {
+						Description = GettextCatalog.GetString ("Closing tag for '{0}'", name)
+					});
 				} else {
 					foreach (XElement listEl in elements) {
 						if (listEl.Name == el.Name)
@@ -1266,6 +1267,33 @@ namespace MonoDevelop.Xml.Editor
 					}
 				}
 			}
+		}
+
+		[CommandHandler (TextEditorCommands.ExpandSelection)]
+		public virtual void ExpandSelection ()
+		{
+			Tracker.UpdateEngine ();
+			XmlExpandSelectionHandler.ExpandSelection (Editor, Tracker.Engine.GetTreeParser);
+		}
+
+		[CommandUpdateHandler (TextEditorCommands.ExpandSelection)]
+		public void UpdateExpandSelection (CommandInfo info)
+		{
+			info.Enabled = XmlExpandSelectionHandler.CanExpandSelection (Editor);
+
+		}
+
+		[CommandHandler (TextEditorCommands.ShrinkSelection)]
+		public virtual void ShrinkSelection ()
+		{
+			Tracker.UpdateEngine ();
+			XmlExpandSelectionHandler.ShrinkSelection (Editor, Tracker.Engine.GetTreeParser);
+		}
+
+		[CommandUpdateHandler (TextEditorCommands.ShrinkSelection)]
+		public void UpdateShrinkSelection (CommandInfo info)
+		{
+			info.Enabled = XmlExpandSelectionHandler.CanShrinkSelection (Editor);
 		}
 	}
 }
